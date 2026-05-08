@@ -85,6 +85,8 @@ plt.grid()
 plt.savefig("plots/phase_shift.png")
 plt.close()
 
+## square wave
+
 square_wave = signal.square(2* np.pi * f * t)
 plt.figure()
 plt.plot(t, square_wave)
