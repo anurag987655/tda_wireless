@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 Delay Embedding Animation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5c667a;
+      --grid: #d9dee8;
+      --signal: #1667c7;
+      --delay: #d14f2f;
+      --point: #111827;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 12px;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      min-width: 150px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input {
+      width: 100%;
+    }
+
+    button {
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid #b9c2d1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    button:hover {
+      background: #eef4fb;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Delay Embedding Animation</h1>
+    <p>The left plot is the signal through time. The moving point travels at the selected frequency; the right plot shows the matching delay point x(t), x(t + tau).</p>
+
+    <div class="toolbar">
+      <label>
+        Frequency
+        <input id="frequency" type="range" min="1" max="9" step="1" value="5">
+      </label>
+      <label>
+        Delay tau
+        <input id="tau" type="range" min="0" max="90" step="1" value="36">
+      </label>
+      <label>
+        Noise
+        <input id="noise" type="range" min="0" max="0.7" step="0.01" value="0">
+      </label>
+      <button id="toggle" type="button">Pause</button>
+    </div>
+
+    <canvas id="canvas" width="940" height="520" aria-label="Animated delay embedding of a sine wave"></canvas>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const frequencyInput = document.getElementById("frequency");
+    const tauInput = document.getElementById("tau");
+    const noiseInput = document.getElementById("noise");
+    const toggleButton = document.getElementById("toggle");
+
+    let running = true;
+    let clock = 0;
+    let lastFrame = performance.now();
+
+    toggleButton.addEventListener("click", () => {
+      running = !running;
+      toggleButton.textContent = running ? "Pause" : "Play";
+    });
+
+    function randomNoise(i) {
+      const value = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+      return value - Math.floor(value) - 0.5;
+    }
+
+    function cleanSignal(t, frequency) {
+      const wrappedT = ((t % 1) + 1) % 1;
+      return Math.sin(2 * Math.PI * frequency * wrappedT);
+    }
+
+    function noisySignal(t, frequency, noise, n) {
+      const wrappedT = ((t % 1) + 1) % 1;
+      const index = Math.floor(wrappedT * n);
+      return cleanSignal(wrappedT, frequency) + randomNoise(index) * noise;
+    }
+
+    function drawAxes(x, y, width, height, title, xLabel, yLabel) {
+      ctx.strokeStyle = "#d9dee8";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= 4; i++) {
+        const gx = x + (width * i) / 4;
+        const gy = y + (height * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(gx, y);
+        ctx.lineTo(gx, y + height);
+        ctx.moveTo(x, gy);
+        ctx.lineTo(x + width, gy);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#64748b";
+      ctx.strokeRect(x, y, width, height);
+
+      ctx.fillStyle = "#172033";
+      ctx.font = "16px system-ui, sans-serif";
+      ctx.fillText(title, x, y - 14);
+
+      ctx.fillStyle = "#5c667a";
+      ctx.font = "13px system-ui, sans-serif";
+      ctx.fillText(xLabel, x + width - 42, y + height + 26);
+      ctx.save();
+      ctx.translate(x - 28, y + 18);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+    }
+
+    function draw(now) {
+      const elapsed = Math.min((now - lastFrame) / 1000, 0.05);
+      lastFrame = now;
+
+      const frequency = Number(frequencyInput.value);
+
+      if (running) {
+        clock = (clock + elapsed * frequency * 0.12) % 1;
+      }
+
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const tau = Number(tauInput.value);
+      const noise = Number(noiseInput.value);
+      const n = 720;
+      const delay = tau / n;
+      const bestTau = Math.round(n / (4 * frequency));
+
+      const left = { x: 56, y: 82, w: 390, h: 330 };
+      const right = { x: 526, y: 82, w: 330, h: 330 };
+
+      drawAxes(left.x, left.y, left.w, left.h, "Signal x(t)", "t", "x");
+      drawAxes(right.x, right.y, right.w, right.h, "Delay embedding", "x(t)", "x(t + tau)");
+
+      ctx.strokeStyle = "#1667c7";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1);
+        const px = left.x + (i / (n - 1)) * left.w;
+        const py = left.y + left.h / 2 - cleanSignal(t, frequency) * left.h * 0.34;
+        if (i === 0) {
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+      }
+      ctx.stroke();
+
+      if (noise > 0) {
+        ctx.strokeStyle = "#8a97aa";
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const t = i / (n - 1);
+          const px = left.x + (i / (n - 1)) * left.w;
+          const py = left.y + left.h / 2 - noisySignal(t, frequency, noise, n) * left.h * 0.34;
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.strokeStyle = "#d14f2f";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const current = cleanSignal(t, frequency);
+        const delayed = cleanSignal(t + delay, frequency);
+        const px = right.x + right.w / 2 + current * right.w * 0.34;
+        const py = right.y + right.h / 2 - delayed * right.h * 0.34;
+        if (i === 0) {
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.fillStyle = "#d14f2f";
+      ctx.globalAlpha = noise > 0 ? 0.34 : 0.18;
+      for (let i = 0; i < n; i += 8) {
+        const t = i / n;
+        const current = noise > 0 ? noisySignal(t, frequency, noise, n) : cleanSignal(t, frequency);
+        const delayed = noise > 0 ? noisySignal(t + delay, frequency, noise, n) : cleanSignal(t + delay, frequency);
+        ctx.beginPath();
+        ctx.arc(
+          right.x + right.w / 2 + current * right.w * 0.34,
+          right.y + right.h / 2 - delayed * right.h * 0.34,
+          2,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      const activeT = clock;
+      const delayedT = (activeT + delay) % 1;
+      const activeValue = noisySignal(activeT, frequency, noise, n);
+      const delayedValue = noisySignal(delayedT, frequency, noise, n);
+      const p1x = left.x + activeT * left.w;
+      const p2x = left.x + delayedT * left.w;
+      const p1y = left.y + left.h / 2 - activeValue * left.h * 0.34;
+      const p2y = left.y + left.h / 2 - delayedValue * left.h * 0.34;
+
+      ctx.fillStyle = "#1667c7";
+      ctx.beginPath();
+      ctx.arc(p1x, p1y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d14f2f";
+      ctx.beginPath();
+      ctx.arc(p2x, p2y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#111827";
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(p1x, p1y);
+      ctx.lineTo(p2x, p2y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const embeddingPointX = right.x + right.w / 2 + activeValue * right.w * 0.34;
+      const embeddingPointY = right.y + right.h / 2 - delayedValue * right.h * 0.34;
+
+      ctx.fillStyle = "#111827";
+      ctx.beginPath();
+      ctx.arc(embeddingPointX, embeddingPointY, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#5c667a";
+      ctx.font = "14px system-ui, sans-serif";
+      ctx.fillText("tau = " + tau + " samples, delay = " + delay.toFixed(3) + " sec", left.x, left.y + left.h + 56);
+      ctx.fillText("frequency = " + frequency + " cycles/sec, noise = " + noise.toFixed(2), right.x, right.y + right.h + 56);
+      ctx.fillText("For this frequency, tau near " + bestTau + " gives the roundest loop.", right.x, right.y + right.h + 80);
+
+      requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
