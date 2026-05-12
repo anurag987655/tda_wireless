@@ -26,6 +26,10 @@ noise = np.random.normal (0,0.2,N)
 
 noisy_signal = noise + sine_wave
 
+## square wave 
+square_wave = np.sign(np.sin(2*np.pi*f*t))
+
+
 # Creating delay embedding function 
 
 def delay_embedding(signal, tau=10): 
@@ -37,6 +41,7 @@ def delay_embedding(signal, tau=10):
 
 x_sine,y_sine=delay_embedding(sine_wave)
 x_noisy,y_noisy= delay_embedding(noisy_signal)
+x_square,y_square=delay_embedding(square_wave)
 
 
 # Experiment 01 : plot sine wave embedding 
@@ -64,4 +69,18 @@ plt.ylabel("x(t+tau)")
 
 plt.grid()
 plt.savefig("plots/noisy_sine_embedding.png")
+plt.close()
+
+# seeing more 
+
+plt.figure(figsize=(6,6))
+
+plt.scatter(x_square,y_square,s=10)
+plt.title("Delay embedding of square wave")
+
+plt.xlabel("x(t)")
+plt.ylabel("x(t+tau)")
+
+plt.grid()
+plt.savefig("plots/square_delay_embedding_2d.png")
 plt.close()
