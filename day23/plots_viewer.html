@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 23 Plot Viewer - Topological Data Analysis</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --gradient-1: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            --glow-blue: rgba(59, 130, 246, 0.15);
+            --glow-purple: rgba(139, 92, 246, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .logo-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(8px);
+        }
+
+        h1 {
+            font-family: 'Cabinet Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            background: linear-gradient(to right, #ffffff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 30px auto;
+            font-weight: 300;
+        }
+
+        /* Sticky Navigation Bar */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 50px;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            display: flex;
+            background: rgba(10, 15, 30, 0.7);
+            border: 1px solid var(--card-border);
+            padding: 6px;
+            border-radius: 9999px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 9999px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link.active {
+            color: #ffffff;
+            background: var(--gradient-1);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Section Layouts */
+        .section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 35px;
+            margin-bottom: 50px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-1);
+            opacity: 0.8;
+        }
+
+        .section.sine::before {
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-cyan));
+        }
+
+        .section.square::before {
+            background: linear-gradient(to right, var(--accent-purple), var(--accent-pink));
+        }
+
+        .section.bpsk::before {
+            background: linear-gradient(to right, #f59e0b, #ef4444);
+        }
+
+        .section-header {
+            margin-bottom: 25px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        .sine .section-badge { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .square .section-badge { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
+        .bpsk .section-badge { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+        h2 {
+            font-family: 'Cabinet Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+
+        .desc-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .desc-box b {
+            color: var(--text-primary);
+        }
+
+        .desc-box code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--accent-cyan);
+        }
+
+        .subsection-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+            margin: 30px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subsection-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* Plot Grids & Cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        .plot-card {
+            background: rgba(10, 15, 30, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plot-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .plot-card:hover {
+            transform: translateY(-5px);
+            background: rgba(10, 15, 30, 0.8);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .sine .plot-card:hover::after {
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .square .plot-card:hover::after {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: inset 0 0 12px rgba(139, 92, 246, 0.1);
+        }
+
+        .bpsk .plot-card:hover::after {
+            border-color: rgba(245, 158, 11, 0.3);
+            box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.1);
+        }
+
+        .plot-card h4 {
+            margin: 6px 0 10px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        .img-container {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #ffffff; /* Contrast for matplotlib's default white background */
+            position: relative;
+        }
+
+        .plot-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        .plot-card:hover .plot-image {
+            transform: scale(1.05);
+        }
+
+        /* Lightbox / Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 85%;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-img {
+            max-width: 100%;
+            max-height: 75vh;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .modal-caption {
+            color: #030712;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 12px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -50px;
+            right: 0px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 2rem;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Footer styling */
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 50px;
+            padding: 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-tag">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Topological Signal Processing
+            </div>
+            <h1>Delay Embedding & Persistence Analysis</h1>
+            <div class="subtitle">Exploring the topological effects of the delay parameter &tau; across different signal geometries.</div>
+        </header>
+
+        <!-- Sticky Navigation -->
+        <nav>
+            <div class="nav-inner">
+                <a href="#sine-sec" class="nav-link">Sine Wave</a>
+                <a href="#square-sec" class="nav-link">Square Wave</a>
+                <a href="#bpsk-sec" class="nav-link">BPSK Signal</a>
+            </div>
+        </nav>
+
+        <!-- Sine Wave Section -->
+        <div id="sine-sec" class="section sine">
+            <div class="section-header">
+                <span class="section-badge">Periodic / Continuous</span>
+                <h2>Sine Wave Signal</h2>
+            </div>
+            <div class="desc-box">
+                <p>
+                    <b>Signal Parameters:</b> <code>&omega; = 2&pi;&middot;5</code>, Sampling Rate = <code>200Hz</code>, Period = <code>40 samples</code>.
+                </p>
+                <p style="margin-top: 8px;">
+                    &bull; <b>&tau; = 10</b> represents a perfect quarter-period (T/4 = 90&deg; phase shift). Topologically, the 2D delay embedding forms a perfect, non-intersecting circle, producing a highly persistent 1D cycle ($H_1$).
+                    <br>&bull; <b>&tau; = 20</b> is a half-period (T/2 = 180&deg; phase shift). The embedding collapses into a straight line (since $x_{t+\tau} = -x_t$), destroying the loop and causing zero persistent 1D cycles in the diagram.
+                </p>
+            </div>
+
+            <div class="subsection-title">1. 2D Delay Embeddings [x(t) vs x(t - &tau;)]</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Sine Wave_5.png', 'Sine Wave - 2D Delay Embedding (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Sine Wave_5.png" alt="Sine Wave tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Sine Wave_10.png', 'Sine Wave - 2D Delay Embedding (tau=10)')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Sine Wave_10.png" alt="Sine Wave tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Sine Wave_15.png', 'Sine Wave - 2D Delay Embedding (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Sine Wave_15.png" alt="Sine Wave tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Sine Wave_20.png', 'Sine Wave - 2D Delay Embedding (tau=20) - Collapsed')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Sine Wave_20.png" alt="Sine Wave tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Sine Wave_25.png', 'Sine Wave - 2D Delay Embedding (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Sine Wave_25.png" alt="Sine Wave tau=25">
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection-title">2. Persistence Diagrams (H₀ in red, H₁ in blue)</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Sine Wave tau=5_persistence_diagram.png', 'Sine Wave - Persistence Diagram (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Sine Wave tau=5_persistence_diagram.png" alt="Sine Wave PD tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Sine Wave tau=10_persistence_diagram.png', 'Sine Wave - Persistence Diagram (tau=10) - Maximum H1 Lifetime')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Sine Wave tau=10_persistence_diagram.png" alt="Sine Wave PD tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Sine Wave tau=15_persistence_diagram.png', 'Sine Wave - Persistence Diagram (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Sine Wave tau=15_persistence_diagram.png" alt="Sine Wave PD tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Sine Wave tau=20_persistence_diagram.png', 'Sine Wave - Persistence Diagram (tau=20) - No H1 Cycle')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Sine Wave tau=20_persistence_diagram.png" alt="Sine Wave PD tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Sine Wave tau=25_persistence_diagram.png', 'Sine Wave - Persistence Diagram (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Sine Wave tau=25_persistence_diagram.png" alt="Sine Wave PD tau=25">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Square Wave Section -->
+        <div id="square-sec" class="section square">
+            <div class="section-header">
+                <span class="section-badge">Discrete Amplitude / Periodic</span>
+                <h2>Square Wave Signal</h2>
+            </div>
+            <div class="desc-box">
+                <p>
+                    <b>Signal Parameters:</b> <code>&omega; = 2&pi;&middot;5</code>, Sampling Rate = <code>200Hz</code>, Period = <code>40 samples</code>.
+                </p>
+                <p style="margin-top: 8px;">
+                    &bull; Because the square wave alternates strictly between amplitudes <code>+1</code> and <code>-1</code>, the delay embedding coordinates $(x_t, x_{t+\tau})$ dwell entirely at four corner points: <code>(1, 1), (1, -1), (-1, 1), (-1, -1)</code>.
+                    <br>&bull; As a result, the embedding consists of clustered points at these coordinates. In the persistence diagram, we see the components merge into a single component ($H_0$) and no high-persistence $H_1$ cycles, representing the discontinuous discrete-amplitude nature of the signal.
+                </p>
+            </div>
+
+            <div class="subsection-title">1. 2D Delay Embeddings [x(t) vs x(t - &tau;)]</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Square Wave_5.png', 'Square Wave - 2D Delay Embedding (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Square Wave_5.png" alt="Square Wave tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Square Wave_10.png', 'Square Wave - 2D Delay Embedding (tau=10)')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Square Wave_10.png" alt="Square Wave tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Square Wave_15.png', 'Square Wave - 2D Delay Embedding (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Square Wave_15.png" alt="Square Wave tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Square Wave_20.png', 'Square Wave - 2D Delay Embedding (tau=20)')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Square Wave_20.png" alt="Square Wave tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_Square Wave_25.png', 'Square Wave - 2D Delay Embedding (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_Square Wave_25.png" alt="Square Wave tau=25">
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection-title">2. Persistence Diagrams (H₀ in red, H₁ in blue)</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Square Wave tau=5_persistence_diagram.png', 'Square Wave - Persistence Diagram (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Square Wave tau=5_persistence_diagram.png" alt="Square Wave PD tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Square Wave tau=10_persistence_diagram.png', 'Square Wave - Persistence Diagram (tau=10)')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Square Wave tau=10_persistence_diagram.png" alt="Square Wave PD tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Square Wave tau=15_persistence_diagram.png', 'Square Wave - Persistence Diagram (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Square Wave tau=15_persistence_diagram.png" alt="Square Wave PD tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Square Wave tau=20_persistence_diagram.png', 'Square Wave - Persistence Diagram (tau=20)')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Square Wave tau=20_persistence_diagram.png" alt="Square Wave PD tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of Square Wave tau=25_persistence_diagram.png', 'Square Wave - Persistence Diagram (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of Square Wave tau=25_persistence_diagram.png" alt="Square Wave PD tau=25">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BPSK Section -->
+        <div id="bpsk-sec" class="section bpsk">
+            <div class="section-header">
+                <span class="section-badge">Phase Shift Modulation / Continuous & Discontinuous</span>
+                <h2>Binary Phase Shift Keying (BPSK) Signal</h2>
+            </div>
+            <div class="desc-box">
+                <p>
+                    <b>Signal Parameters:</b> <code>5 bits</code>, <code>100 samples/bit</code>, Carrier Frequency <code>f_c = 5Hz</code>, Carrier Period = <code>20 samples</code>.
+                </p>
+                <p style="margin-top: 8px;">
+                    &bull; <b>Carrier & Phase Shift Dynamics:</b> The carrier wave forms the main oscillation (with a period of 20 samples). BPSK shifts the phase of the carrier by 180&deg; to represent a digital bit shift (0 vs 1).
+                    <br>&bull; <b>Topological Impact of &tau;:</b>
+                    <br>&nbsp;&nbsp;&bull; <code>&tau; = 5</code> (Quarter-period shift $T/4$) yields circular rings representing the carrier. Transitions between phase states form intersecting paths crossing the center.
+                    <br>&nbsp;&nbsp;&bull; <code>&tau; = 10</code> (Half-period shift $T/2$) forces the carrier loop to collapse onto the diagonal line $x_{t+\tau} = -x_t$.
+                    <br>&nbsp;&nbsp;&bull; <code>&tau; = 20</code> (Full-period shift $T$) forces the carrier to align onto the main diagonal $x_{t+\tau} = x_t$.
+                    <br>&bull; <b>Persistence Signature:</b> The combination of continuous carrier cycles and abrupt $180^\circ$ phase reversals creates multiple overlapping cycles. The persistence diagrams show a complex structure of short-to-medium-lived $H_1$ cycles, mapping the transition trajectories.
+                </p>
+            </div>
+
+            <div class="subsection-title">1. 2D Delay Embeddings [x(t) vs x(t - &tau;)]</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_BPSK Signal_5.png', 'BPSK - 2D Delay Embedding (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_BPSK Signal_5.png" alt="BPSK Signal tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_BPSK Signal_10.png', 'BPSK - 2D Delay Embedding (tau=10) - Collapsed')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_BPSK Signal_10.png" alt="BPSK Signal tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_BPSK Signal_15.png', 'BPSK - 2D Delay Embedding (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_BPSK Signal_15.png" alt="BPSK Signal tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_BPSK Signal_20.png', 'BPSK - 2D Delay Embedding (tau=20) - Main Diagonal')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_BPSK Signal_20.png" alt="BPSK Signal tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Delay_embedding_BPSK Signal_25.png', 'BPSK - 2D Delay Embedding (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Delay_embedding_BPSK Signal_25.png" alt="BPSK Signal tau=25">
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection-title">2. Persistence Diagrams (H₀ in red, H₁ in blue)</div>
+            <div class="grid">
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of BPSK Signal tau=5_persistence_diagram.png', 'BPSK - Persistence Diagram (tau=5)')">
+                    <h4>&tau; = 5</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of BPSK Signal tau=5_persistence_diagram.png" alt="BPSK Signal PD tau=5">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of BPSK Signal tau=10_persistence_diagram.png', 'BPSK - Persistence Diagram (tau=10)')">
+                    <h4>&tau; = 10</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of BPSK Signal tau=10_persistence_diagram.png" alt="BPSK Signal PD tau=10">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of BPSK Signal tau=15_persistence_diagram.png', 'BPSK - Persistence Diagram (tau=15)')">
+                    <h4>&tau; = 15</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of BPSK Signal tau=15_persistence_diagram.png" alt="BPSK Signal PD tau=15">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of BPSK Signal tau=20_persistence_diagram.png', 'BPSK - Persistence Diagram (tau=20)')">
+                    <h4>&tau; = 20</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of BPSK Signal tau=20_persistence_diagram.png" alt="BPSK Signal PD tau=20">
+                    </div>
+                </div>
+                <div class="plot-card" onclick="openLightbox('plots/Persistence of BPSK Signal tau=25_persistence_diagram.png', 'BPSK - Persistence Diagram (tau=25)')">
+                    <h4>&tau; = 25</h4>
+                    <div class="img-container">
+                        <img class="plot-image" src="plots/Persistence of BPSK Signal tau=25_persistence_diagram.png" alt="BPSK Signal PD tau=25">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Topological Data Analysis &bull; Delay Coordinate Embedding &bull; Gudhi TDA Library
+        </footer>
+    </div>
+
+    <!-- Modal Element -->
+    <div id="lightbox" class="modal" onclick="closeLightbox()">
+        <button class="modal-close" onclick="closeLightbox()">&times;</button>
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img id="modal-img" class="modal-img" src="" alt="Zoomed Plot">
+            <div id="modal-caption" class="modal-caption"></div>
+        </div>
+    </div>
+
+    <script>
+        // Lightbox Functions
+        function openLightbox(src, title) {
+            const modal = document.getElementById('lightbox');
+            const img = document.getElementById('modal-img');
+            const caption = document.getElementById('modal-caption');
+            
+            img.src = src;
+            caption.textContent = title;
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightbox');
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Active Link Highlighting on Scroll
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 120)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Set first link active on load
+        if (navLinks.length > 0) {
+            navLinks[0].classList.add('active');
+        }
+    </script>
+</body>
+
+</html>
