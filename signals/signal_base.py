@@ -7,6 +7,18 @@ class  Signal:
         self.t = np.asarray(t)
         self.name = name
 
+    @property
+    def sampling_frequency(self): 
+         
+         if len(self.t)<2: 
+              return None
+         
+         return 1/(self.t[1]-self.t[0])
+    
+    @property
+    def duration(self):
+         return self.t[1]-self.t[0]
+
     def __len__(self):
         return len(self.x)
     
