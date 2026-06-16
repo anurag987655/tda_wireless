@@ -43,15 +43,18 @@ def bpsk(num_bits =100, samples_per_bit = 50):
 
     return Signal(x,t,"BPSK")
 
-def qpsk(num_symbols=100, samples_per_symbol=100):
-    I = np.random.choice([-1,1],num_symbols)
-    Q = np.random.choice([-1,1],num_symbols)
+def qpsk(num_symbols=1000, samples_per_symbol=20):
 
-    symbols = I + 1j * Q 
+    bits = np.random.randint(0,2,2*num_symbols)
 
-    x = np.repeat(np.real(symbols),samples_per_symbol)
+    I = 2*bits[0::2]-1
+    Q = 2*bits[1::2]-1
 
-    t = np.arange(len(x))
+    symbols = (I + 1j*Q)/np.sqrt(2)
+
+    x = np.repeat(symbols,samples_per_symbol)
+
+    t = np.arange(len(x))/samples_per_symbol
 
     return Signal(x,t,"QPSK")
          
