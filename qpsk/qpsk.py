@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 import os  
+import  gudhi 
 
 os.makedirs("plots",exist_ok=True)
 np.random.seed(42)
@@ -100,6 +101,30 @@ def gaussian_pulse_shaping(symbols, samples_per_symbol=20, sigma=2):
     shaped = np.convolve(upsampled, g, mode="same")
 
     return shaped
+
+
+## Defining the function max_persistence which returns the maximum h1 persistence
+
+def max_persistence(points, max_dim = 1): 
+    """
+    compute maximum H1 persistence from a given cloud points.
+    """
+    rips = gudhi.RipsComplex(points=points)
+    st = rips.create_simplex_tree(max_dimension=max_dim)
+
+    st.compute_persistence()
+
+    diag = st.persistence()
+    lifetimes = []
+
+    for dim, (birth,death) in diag: 
+        if dim == 1 and death != float('inf'):
+            lifetimes.append(death - birth)
+        
+    if len(lifetimes) == 0: 
+        return 0 
+    
+    return np.max(lifetimes)
 
 I, Q, symbols = qpsk(1000)
 # plot_I(I)
