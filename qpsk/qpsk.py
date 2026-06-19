@@ -3,6 +3,19 @@ import matplotlib.pyplot as plt
 import os  
 
 os.makedirs("plots",exist_ok=True)
+np.random.seed(42)
+
+def add_awgn_snr(signal, snr_db):
+    signal_power = np.mean(np.abs(signal)**2)
+    snr_linear=10**(snr_db/10)
+
+    noise_power = signal_power/snr_linear
+    
+    sigma = np.sqrt(noise_power/2)
+
+    noise = sigma * (np.random.randn(len(signal)) + 1j * np.random.randn(len(signal)))
+
+    return signal + noise
 
 
 def qpsk(no_of_symbols = 1000, sample_per_symbol = 20): 
@@ -108,5 +121,20 @@ for t in tau:
    embedded =  delay_embedding(signal,t) 
    plot_embedding(embedded,t,"pulse shaped qpsk")
 
-## Introducting awgn 
+SNR = [30,20,10,5,0]
 
+for s in SNR: 
+    r = add_awgn_snr(signal,s)
+
+    # plt.figure(figsize=(10,4))
+    # plt.plot(r[:300])
+    # plt.title(f"SNR = {s} dB")
+    # plt.grid(True)
+
+    # plt.show()
+    # plt.close()
+
+    for tau in [5,10,15,20]:
+        embedded = delay_embedding(r,tau)
+
+        plot_embedding(embedded,tau,f"Pulse_shaped_QPSK_AWGN_{s}DB")
