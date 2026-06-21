@@ -216,20 +216,21 @@ def compute_topological_metrics(points):
 
 
 
-## choosing the best tau 
-symbols_choice = [50, 100, 200, 500, 1000]
-tau = range(1,21)
-for s in symbols_choice:
-    I, Q, symbol = qpsk(s)
-    x = gaussian_pulse_shaping(symbol, samples_per_symbol=20)
-    signal = x / np.std(x)
-    results=[]
-    for tau_val in tau:
-        embedded = delay_embedding(signal, tau_val)
-        embedded = subsample(embedded,max_points =200)
-        max_p, _ = compute_topological_metrics(embedded)
-        results.append(max_p)
-    
-    draw_tau_vs_persistence(results, tau, s)
+if __name__ == '__main__':
+    ## choosing the best tau 
+    symbols_choice = [50, 100, 200, 500, 1000]
+    tau = range(1,21)
+    for s in symbols_choice:
+        I, Q, symbol = qpsk(s)
+        x = gaussian_pulse_shaping(symbol, samples_per_symbol=20)
+        signal = x / np.std(x)
+        results=[]
+        for tau_val in tau:
+            embedded = delay_embedding(signal, tau_val)
+            embedded = subsample(embedded,max_points =200)
+            max_p, _ = compute_topological_metrics(embedded)
+            results.append(max_p)
+        
+        draw_tau_vs_persistence(results, tau, s)
 
 
