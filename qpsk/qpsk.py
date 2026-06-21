@@ -217,8 +217,8 @@ def compute_topological_metrics(points):
 
 
 ## choosing the best tau 
-symbols_choice = [50, 100, 200]
-tau = [1, 2, 5, 10, 15, 20, 25, 30]
+symbols_choice = [50, 100, 200, 500, 1000]
+tau = range(1,21)
 for s in symbols_choice:
     I, Q, symbol = qpsk(s)
     x = gaussian_pulse_shaping(symbol, samples_per_symbol=20)
