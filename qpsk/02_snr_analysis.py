@@ -33,6 +33,7 @@ def run_snr_experiment(snr, signal, tau=2, trials=10):
     for _ in range(trials):
         
         noisy = add_awgn_snr(signal, snr)
+        noisy = noisy / np.std(noisy)
         embedded = delay_embedding(noisy,tau)
         points = subsample(embedded, 200)
 
