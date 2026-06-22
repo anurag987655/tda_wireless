@@ -62,22 +62,111 @@ def plot_results(df):
     plt.savefig("plots/features_vs_snr.png")
     plt.close()
 
+
+def run_full_experiment(seed):
+    np.random.seed(seed)
+
+    results = []
+
+    for snr in SNRs:
+        result = run_snr_experiment(snr, signal, tau, TRIALS)
+        results.append(result)
+
+    return pd.DataFrame(results)
+
 I, Q, symbols = qpsk(1000)
 
 x = gaussian_pulse_shaping(symbols, 20)
 
 signal = x / np.std(x)
 
-results = []
+# results = []
 
-for snr in SNRs: 
-    result = run_snr_experiment(snr, signal, tau, TRIALS)
-    results.append(result)
+# for snr in SNRs: 
+#     result = run_snr_experiment(snr, signal, tau, TRIALS)
+#     results.append(result)
 
-df = pd.DataFrame(results)
-print(df) 
+# df = pd.DataFrame(results)
+# print(df) 
 
-df.to_csv(f"results/snr_experiment_qpsk.csv", index=False)      
+# df.to_csv(f"results/snr_experiment_qpsk.csv", index=False)      
 
 
-plot_results(df)   
+# plot_results(df)   
+
+seeds = [0, 1, 42, 100]
+
+all_runs = []
+
+for s in seeds:
+    df_run = run_full_experiment(s)
+    df_run["seed"] = s
+    all_runs.append(df_run)
+
+df_all = pd.concat(all_runs)
+df_stats = df_all.drop(columns=["seed"])
+
+df_mean = df_stats.groupby("snr").mean(numeric_only=True)
+df_std = df_stats.groupby("snr").std(numeric_only=True)
+
+
+df_mean = df_mean.sort_index()
+df_std = df_std.sort_index()
+
+print("\nMean across seeds:")
+print(df_mean)
+
+print("\nStd across seeds:")
+print(df_std)
+
+df_mean.to_csv("results/stability_mean.csv")
+
+df_std.to_csv("results/stability_std.csv")
+
+plt.figure()
+
+plt.plot(
+    df_mean.index,
+    df_mean["entropy_mean"],
+    marker="o"
+)
+
+plt.fill_between(
+    df_mean.index,
+    df_mean["entropy_mean"]
+      - df_std["entropy_mean"],
+    df_mean["entropy_mean"]
+      + df_std["entropy_mean"],
+    alpha=0.3
+)
+
+plt.xlabel("SNR (dB)")
+plt.ylabel("Persistence Entropy")
+plt.grid(True)
+
+plt.savefig(
+    "plots/entropy_stability.png"
+)
+plt.close()
+
+plt.figure()
+
+plt.plot(
+    df_mean.index,
+    df_mean["max_p_mean"],
+    marker="o"
+)
+
+plt.fill_between(
+    df_mean.index,
+    df_mean["max_p_mean"] - df_std["max_p_mean"],
+    df_mean["max_p_mean"] + df_std["max_p_mean"],
+    alpha=0.3
+)
+
+plt.xlabel("SNR (dB)")
+plt.ylabel("Maximum Persistence")
+plt.grid(True)
+
+plt.savefig("plots/persistence_stability.png")
+plt.close()
