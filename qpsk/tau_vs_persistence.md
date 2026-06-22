@@ -2,7 +2,9 @@
 
 ## Plots
 
-![50 symbols](plots/tau_vs_persistence_50.png) ![100 symbols](plots/tau_vs_persistence_100.png) ![200 symbols](plots/tau_vs_persistence_200.png) ![500 symbols](plots/tau_vs_persistence_500.png) ![1000 symbols](plots/tau_vs_persistence_1000.png)
+| 50 | 100 | 200 | 500 | 1000 |
+|:--:|:---:|:---:|:---:|:----:|
+| ![50](plots/tau_vs_persistence_50.png) | ![100](plots/tau_vs_persistence_100.png) | ![200](plots/tau_vs_persistence_200.png) | ![500](plots/tau_vs_persistence_500.png) | ![1000](plots/tau_vs_persistence_1000.png) |
 
 ## Full Table — Persistence for each tau × symbol count
 
