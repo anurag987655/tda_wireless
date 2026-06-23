@@ -28,6 +28,7 @@ def run_snr_experiment(snr, signal, tau=2, trials=10):
             Dict of mean & std for max persistence and entropy
     """
     max_p_list = []
+    mean_p_list = []
     entropy_list = []
 
     for _ in range(trials):
@@ -37,12 +38,13 @@ def run_snr_experiment(snr, signal, tau=2, trials=10):
         embedded = delay_embedding(noisy,tau)
         points = subsample(embedded, 200)
 
-        mp, entrp = compute_topological_metrics(points)
+        mp, mean_p, entrp = compute_topological_metrics(points)
 
         max_p_list.append(mp)
+        mean_p_list.append(mean_p)
         entropy_list.append(entrp)
 
-    return {"snr": snr,"max_p_mean": np.mean(max_p_list),"max_p_std": np.std(max_p_list),"entropy_mean": np.mean(entropy_list),"entropy_std": np.std(entropy_list)}
+    return {"snr": snr,"max_p_mean": np.mean(max_p_list),"max_p_std": np.std(max_p_list),"mean_p_mean": np.mean(mean_p_list),"mean_p_std": np.std(mean_p_list), "entropy_mean": np.mean(entropy_list),"entropy_std": np.std(entropy_list)}
 
 
 def plot_results(df):
@@ -169,4 +171,29 @@ plt.ylabel("Maximum Persistence")
 plt.grid(True)
 
 plt.savefig("plots/persistence_stability.png")
+plt.close()
+
+plt.figure()
+
+plt.plot(
+    df_mean.index,
+    df_mean["mean_p_mean"],
+    marker="o",
+    color="crimson" # Distinct color for Mean Persistence
+)
+
+plt.fill_between(
+    df_mean.index,
+    df_mean["mean_p_mean"] - df_std["mean_p_mean"],
+    df_mean["mean_p_mean"] + df_std["mean_p_mean"],
+    color="crimson",
+    alpha=0.3
+)
+
+plt.xlabel("SNR (dB)")
+plt.ylabel("Mean Persistence")
+plt.title("Mean Persistence Stability across Seeds")
+plt.grid(True)
+
+plt.savefig("plots/mean_persistence_stability.png")
 plt.close()
