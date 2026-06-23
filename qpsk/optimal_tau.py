@@ -190,8 +190,11 @@ def draw_tau_vs_persistence(max_pers, tau_vals,s):
     plt.savefig(f"plots/tau_vs_persistence_{s}.png")
     plt.close()
 
-def compute_topological_metrics(points): 
-    rips = gudhi.RipsComplex(points=points)
+def compute_topological_metrics(points, max_edge_length=None): 
+    if max_edge_length is None:
+        rips = gudhi.RipsComplex(points=points)
+    else:
+        rips = gudhi.RipsComplex(points=points, max_edge_length=max_edge_length)
     st = rips.create_simplex_tree(max_dimension=2)
     st.compute_persistence()
     diag = st.persistence()
@@ -202,18 +205,20 @@ def compute_topological_metrics(points):
             lifetimes.append(death - birth)
         
     if len(lifetimes) == 0: 
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0, 0
     
     lifetimes = np.array(lifetimes)
     max_p = np.max(lifetimes)
     mean_p = np.mean(lifetimes) # computing mean persistence 
     total_p = np.sum(lifetimes)
+    bar_count = len(lifetimes)
     
     # Persistence Entropy
     probs = lifetimes / total_p
     entropy = -np.sum(probs * np.log(probs + 1e-12))
+    normalized_entropy = entropy / np.log(bar_count) if bar_count > 1 else 0.0
     
-    return max_p, mean_p, entropy
+    return max_p, mean_p, entropy, normalized_entropy, bar_count
 
 
 
@@ -229,9 +234,8 @@ if __name__ == '__main__':
         for tau_val in tau:
             embedded = delay_embedding(signal, tau_val)
             embedded = subsample(embedded,max_points =200)
-            max_p, _ = compute_topological_metrics(embedded)
+            max_p, _, _, _, _ = compute_topological_metrics(embedded)
             results.append(max_p)
         
         draw_tau_vs_persistence(results, tau, s)
-
 
