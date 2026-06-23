@@ -202,17 +202,18 @@ def compute_topological_metrics(points):
             lifetimes.append(death - birth)
         
     if len(lifetimes) == 0: 
-        return 0.0, 0.0
+        return 0.0, 0.0, 0.0
     
     lifetimes = np.array(lifetimes)
     max_p = np.max(lifetimes)
+    mean_p = np.mean(lifetimes) # computing mean persistence 
     total_p = np.sum(lifetimes)
     
     # Persistence Entropy
     probs = lifetimes / total_p
     entropy = -np.sum(probs * np.log(probs + 1e-12))
     
-    return max_p, entropy
+    return max_p, mean_p, entropy
 
 
 
