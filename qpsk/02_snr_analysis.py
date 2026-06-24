@@ -12,7 +12,7 @@ os.makedirs("results", exist_ok=True)
 os.makedirs("plots", exist_ok=True)
 
 TRIALS = int(os.environ.get("QPSK_TRIALS", "10"))
-TAU = int(os.environ.get("QPSK_TAU", "2"))
+TAU = int(os.environ.get("QPSK_TAU", "15"))
 MAX_POINTS = int(os.environ.get("QPSK_MAX_POINTS", "200"))
 SYMBOLS = int(os.environ.get("QPSK_SYMBOLS", "1000"))
 SAMPLES_PER_SYMBOL = int(os.environ.get("QPSK_SAMPLES_PER_SYMBOL", "20"))
